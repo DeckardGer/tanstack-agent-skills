@@ -147,6 +147,54 @@ To minimize token usage:
 - Reference external docs for deep dives
 - Only load relevant rules based on context
 
+## Applying Rules
+
+When generating or reviewing code:
+
+1. **Check CRITICAL rules first** — These prevent bugs
+2. **Apply HIGH priority patterns** — Improve reliability
+3. **Consider MEDIUM patterns** — Better UX
+4. **Suggest LOW patterns** — When optimizing
+
+## Common Scenarios
+
+### New TanStack Query Setup
+1. Load tanstack-query skill
+2. Apply `qk-factory-pattern` for query organization
+3. Apply `cache-stale-time` and `cache-gc-time`
+4. Set up error boundaries per `err-error-boundaries`
+
+### New TanStack Router Setup
+1. Load tanstack-router skill
+2. Apply `ts-register-router` for type safety
+3. Apply `org-file-based-routing` conventions
+4. Configure preloading per `preload-intent`
+
+### Adding Server Functions
+1. Load tanstack-start skill
+2. Apply `sf-create-server-fn` patterns
+3. Always apply `sf-input-validation`
+4. Consider `mw-request-middleware` for auth
+
+### Full-Stack Data Flow
+1. Load tanstack-integration skill
+2. Apply `setup-query-client-context`
+3. Follow `flow-loader-query-pattern`
+4. Configure `cache-single-source`
+
+## Code Review Checklist
+
+When reviewing TanStack code:
+
+- [ ] Query keys are arrays (`qk-array-structure`)
+- [ ] All dependencies in query keys (`qk-include-dependencies`)
+- [ ] Router types registered (`ts-register-router`)
+- [ ] Loaders use ensureQueryData (`load-ensure-query-data`)
+- [ ] Search params validated (`search-validation`)
+- [ ] Server function inputs validated (`sf-input-validation`)
+- [ ] Mutations invalidate queries (`mut-invalidate-queries`)
+- [ ] Error boundaries in place (`err-error-boundaries`)
+
 ## Adding New Rules
 
 1. Identify the category and create appropriate prefix
@@ -155,3 +203,9 @@ To minimize token usage:
 4. Include context for when to apply
 5. Assign appropriate priority level
 6. Update SKILL.md quick reference table
+
+## Related Documentation
+
+- https://tanstack.com/query/latest/docs
+- https://tanstack.com/router/latest/docs
+- https://tanstack.com/start/latest/docs
