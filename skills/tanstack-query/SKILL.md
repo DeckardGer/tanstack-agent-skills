@@ -21,13 +21,15 @@ Comprehensive guidelines for implementing TanStack Query (React Query) patterns 
 | Priority | Category | Rules | Impact |
 |----------|----------|-------|--------|
 | CRITICAL | Query Keys | 5 rules | Prevents cache bugs and data inconsistencies |
-| CRITICAL | Caching | 4 rules | Optimizes performance and data freshness |
-| HIGH | Mutations | 5 rules | Ensures data integrity and UI consistency |
+| CRITICAL | Caching | 5 rules | Optimizes performance and data freshness |
+| HIGH | Mutations | 6 rules | Ensures data integrity and UI consistency |
 | HIGH | Error Handling | 3 rules | Prevents poor user experiences |
 | MEDIUM | Prefetching | 4 rules | Improves perceived performance |
+| MEDIUM | Parallel Queries | 2 rules | Enables dynamic parallel fetching |
 | MEDIUM | Infinite Queries | 3 rules | Prevents pagination bugs |
 | MEDIUM | SSR Integration | 4 rules | Enables proper hydration |
 | LOW | Performance | 4 rules | Reduces unnecessary re-renders |
+| LOW | Offline Support | 2 rules | Enables offline-first patterns |
 
 ## Quick Reference
 
@@ -45,6 +47,7 @@ Comprehensive guidelines for implementing TanStack Query (React Query) patterns 
 - `cache-gc-time` — Configure gcTime for inactive query retention
 - `cache-defaults` — Set sensible defaults at QueryClient level
 - `cache-invalidation` — Use targeted invalidation over broad patterns
+- `cache-placeholder-vs-initial` — Understand placeholder vs initial data differences
 
 ### Mutations (Prefix: `mut-`)
 
@@ -53,6 +56,7 @@ Comprehensive guidelines for implementing TanStack Query (React Query) patterns 
 - `mut-rollback-context` — Provide rollback context from onMutate
 - `mut-error-handling` — Handle mutation errors gracefully
 - `mut-loading-states` — Use isPending for mutation loading states
+- `mut-mutation-state` — Use useMutationState for cross-component tracking
 
 ### Error Handling (Prefix: `err-`)
 
@@ -80,12 +84,22 @@ Comprehensive guidelines for implementing TanStack Query (React Query) patterns 
 - `ssr-stale-time-server` — Set higher staleTime on server
 - `ssr-hydration-boundary` — Wrap with HydrationBoundary
 
+### Parallel Queries (Prefix: `parallel-`)
+
+- `parallel-use-queries` — Use useQueries for dynamic parallel queries
+- `query-cancellation` — Implement query cancellation properly
+
 ### Performance (Prefix: `perf-`)
 
 - `perf-select-transform` — Use select to transform/filter data
 - `perf-structural-sharing` — Leverage structural sharing
 - `perf-notify-change-props` — Limit re-renders with notifyOnChangeProps
 - `perf-placeholder-data` — Use placeholderData for instant UI
+
+### Offline Support (Prefix: `offline-`)
+
+- `network-mode` — Configure network mode for offline support
+- `persist-queries` — Configure query persistence for offline support
 
 ## How to Use
 

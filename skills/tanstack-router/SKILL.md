@@ -22,10 +22,11 @@ Comprehensive guidelines for implementing TanStack Router patterns in React appl
 | Priority | Category | Rules | Impact |
 |----------|----------|-------|--------|
 | CRITICAL | Type Safety | 4 rules | Prevents runtime errors and enables refactoring |
-| CRITICAL | Route Organization | 4 rules | Ensures maintainable route structure |
-| HIGH | Data Loading | 5 rules | Optimizes data fetching and caching |
-| HIGH | Search Params | 4 rules | Enables type-safe URL state |
-| MEDIUM | Navigation | 4 rules | Improves UX and accessibility |
+| CRITICAL | Route Organization | 5 rules | Ensures maintainable route structure |
+| HIGH | Data Loading | 6 rules | Optimizes data fetching and caching |
+| HIGH | Search Params | 5 rules | Enables type-safe URL state |
+| HIGH | Error Handling | 1 rule | Handles 404 and errors gracefully |
+| MEDIUM | Navigation | 5 rules | Improves UX and accessibility |
 | MEDIUM | Code Splitting | 3 rules | Reduces bundle size |
 | MEDIUM | Preloading | 3 rules | Improves perceived performance |
 | LOW | Route Context | 3 rules | Enables dependency injection |
@@ -45,6 +46,7 @@ Comprehensive guidelines for implementing TanStack Router patterns in React appl
 - `org-route-tree-structure` — Follow hierarchical route tree patterns
 - `org-pathless-layouts` — Use pathless routes for shared layouts
 - `org-index-routes` — Understand index vs layout routes
+- `org-virtual-routes` — Understand virtual file routes
 
 ### Data Loading (Prefix: `load-`)
 
@@ -53,6 +55,7 @@ Comprehensive guidelines for implementing TanStack Router patterns in React appl
 - `load-ensure-query-data` — Use ensureQueryData with TanStack Query
 - `load-deferred-data` — Split critical and non-critical data
 - `load-error-handling` — Handle loader errors appropriately
+- `load-parallel` — Leverage parallel route loading
 
 ### Search Params (Prefix: `search-`)
 
@@ -60,6 +63,11 @@ Comprehensive guidelines for implementing TanStack Router patterns in React appl
 - `search-type-inheritance` — Leverage parent search param types
 - `search-middleware` — Use search param middleware
 - `search-defaults` — Provide sensible defaults
+- `search-custom-serializer` — Configure custom search param serializers
+
+### Error Handling (Prefix: `err-`)
+
+- `err-not-found` — Handle not-found routes properly
 
 ### Navigation (Prefix: `nav-`)
 
@@ -67,6 +75,7 @@ Comprehensive guidelines for implementing TanStack Router patterns in React appl
 - `nav-active-states` — Configure active link states
 - `nav-use-navigate` — Use useNavigate for programmatic navigation
 - `nav-relative-paths` — Understand relative path navigation
+- `nav-route-masks` — Use route masks for modal URLs
 
 ### Code Splitting (Prefix: `split-`)
 

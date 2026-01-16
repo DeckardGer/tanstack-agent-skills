@@ -25,8 +25,10 @@ Comprehensive guidelines for implementing TanStack Start patterns in full-stack 
 | CRITICAL | Security | 4 rules | Prevents vulnerabilities |
 | HIGH | Middleware | 4 rules | Request/response handling |
 | HIGH | Authentication | 4 rules | Secure user sessions |
-| MEDIUM | SSR | 4 rules | Server rendering patterns |
+| MEDIUM | API Routes | 1 rule | External endpoint patterns |
+| MEDIUM | SSR | 6 rules | Server rendering patterns |
 | MEDIUM | Error Handling | 3 rules | Graceful failure handling |
+| MEDIUM | Environment | 1 rule | Configuration management |
 | LOW | File Organization | 3 rules | Maintainable code structure |
 | LOW | Deployment | 2 rules | Production readiness |
 
@@ -61,12 +63,21 @@ Comprehensive guidelines for implementing TanStack Start patterns in full-stack 
 - `auth-server-functions` — Verify auth in server functions
 - `auth-cookie-security` — Configure secure cookie settings
 
+### API Routes (Prefix: `api-`)
+
+- `api-routes` — Create API routes for external consumers
+
 ### SSR (Prefix: `ssr-`)
 
 - `ssr-data-loading` — Load data appropriately for SSR
 - `ssr-hydration-safety` — Prevent hydration mismatches
-- `ssr-streaming` — Use streaming for large responses
+- `ssr-streaming` — Implement streaming SSR for faster TTFB
 - `ssr-selective` — Apply selective SSR when beneficial
+- `ssr-prerender` — Configure static prerendering and ISR
+
+### Environment (Prefix: `env-`)
+
+- `env-functions` — Use environment functions for configuration
 
 ### Error Handling (Prefix: `err-`)
 
@@ -83,7 +94,7 @@ Comprehensive guidelines for implementing TanStack Start patterns in full-stack 
 ### Deployment (Prefix: `deploy-`)
 
 - `deploy-env-config` — Configure environment variables
-- `deploy-adapter-selection` — Choose appropriate deployment adapter
+- `deploy-adapters` — Choose appropriate deployment adapter
 
 ## How to Use
 
