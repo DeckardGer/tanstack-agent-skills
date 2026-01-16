@@ -4,7 +4,7 @@
 
 ## Explanation
 
-Pass the QueryClient instance through TanStack Router's context system rather than using a global. This enables proper SSR with per-request clients, testability, and type-safe access in loaders.
+Pass the QueryClient instance through TanStack Router's context system rather than using a global. This enables proper SSR with per-request clients, testability, and type-safe access in loaders. Use `@tanstack/react-router-ssr-query` for automatic SSR integration.
 
 ## Bad Example
 
@@ -23,7 +23,7 @@ export const Route = createFileRoute('/posts')({
 })
 ```
 
-## Good Example
+## Good Example: Modern Router Setup
 
 ```tsx
 // routes/__root.tsx
@@ -39,30 +39,32 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 })
 
 // router.tsx
+import { QueryClient } from '@tanstack/react-query'
 import { createRouter } from '@tanstack/react-router'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { routeTree } from './routeTree.gen'
 
-export function createAppRouter() {
+export function getRouter() {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60 * 1000,
+        refetchOnWindowFocus: false,
+        staleTime: 1000 * 60 * 2, // 2 minutes
       },
     },
   })
 
   const router = createRouter({
     routeTree,
-    context: {
-      queryClient,
-    },
-    // Wrap entire app with QueryClientProvider
-    Wrap: ({ children }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    ),
+    context: { queryClient },
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0,
+    scrollRestoration: true,
+  })
+
+  setupRouterSsrQueryIntegration({
+    router,
+    queryClient,
   })
 
   return router
@@ -70,7 +72,7 @@ export function createAppRouter() {
 
 declare module '@tanstack/react-router' {
   interface Register {
-    router: ReturnType<typeof createAppRouter>
+    router: ReturnType<typeof getRouter>
   }
 }
 
@@ -83,36 +85,42 @@ export const Route = createFileRoute('/posts')({
 })
 ```
 
-## Good Example: SSR with Per-Request Client
+## Good Example: Root Route with Context
 
 ```tsx
-// entry-server.tsx
-import { createAppRouter } from './router'
+// routes/__root.tsx
+import { createRootRouteWithContext, Outlet, HeadContent, Scripts } from '@tanstack/react-router'
+import { QueryClient } from '@tanstack/react-query'
 
-export async function render(req: Request) {
-  // Create fresh QueryClient for each request
-  const router = createAppRouter()
-
-  // Wait for critical data to load
-  await router.load()
-
-  const html = renderToString(
-    <RouterProvider router={router} />
-  )
-
-  return html
+interface RouterContext {
+  queryClient: QueryClient
+  user: User | null
 }
 
-// entry-client.tsx
-import { createAppRouter } from './router'
+export const Route = createRootRouteWithContext<RouterContext>()({
+  component: RootComponent,
+  beforeLoad: async ({ context }) => {
+    // Prefetch auth or other global data
+    await context.queryClient.ensureQueryData(authQueryOptions)
+  },
+})
 
-const router = createAppRouter()
-
-hydrateRoot(
-  document.getElementById('app')!,
-  <RouterProvider router={router} />
-)
+function RootComponent() {
+  return (
+    <html>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        <Outlet />
+        <Scripts />
+      </body>
+    </html>
+  )
+}
 ```
+
+TanStack Start handles SSR and hydration automatically via the Vite plugin. No separate entry files needed.
 
 ## Good Example: Testing with Mock QueryClient
 
@@ -159,6 +167,7 @@ test('loads posts', async () => {
 
 - Router context flows to all loaders and beforeLoad hooks
 - Creating QueryClient per request is essential for SSR
-- Use `Wrap` option for provider wrapping
+- Use `setupRouterSsrQueryIntegration` for automatic SSR handling
 - Access queryClient via `context` parameter in loaders
 - This pattern enables clean dependency injection for testing
+- Install: `npm install @tanstack/react-router-ssr-query`

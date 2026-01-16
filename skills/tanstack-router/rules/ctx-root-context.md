@@ -63,19 +63,27 @@ function RootComponent() {
 
 // router.tsx - Provide context when creating router
 import { createRouter } from '@tanstack/react-router'
-import { routeTree } from './routeTree.gen'
 import { QueryClient } from '@tanstack/react-query'
+import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
+import { routeTree } from './routeTree.gen'
 
-const queryClient = new QueryClient()
+export function getRouter(auth: RouterContext['auth'] = { user: null, isAuthenticated: false }) {
+  const queryClient = new QueryClient()
 
-export function createAppRouter(auth: RouterContext['auth']) {
-  return createRouter({
+  const router = createRouter({
     routeTree,
     context: {
       queryClient,
       auth,
     },
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0,
+    scrollRestoration: true,
   })
+
+  setupRouterSsrQueryIntegration({ router, queryClient })
+
+  return router
 }
 
 // routes/posts.tsx - Use context in loaders

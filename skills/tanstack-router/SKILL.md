@@ -23,6 +23,7 @@ Comprehensive guidelines for implementing TanStack Router patterns in React appl
 |----------|----------|-------|--------|
 | CRITICAL | Type Safety | 4 rules | Prevents runtime errors and enables refactoring |
 | CRITICAL | Route Organization | 5 rules | Ensures maintainable route structure |
+| HIGH | Router Config | 1 rule | Global router defaults |
 | HIGH | Data Loading | 6 rules | Optimizes data fetching and caching |
 | HIGH | Search Params | 5 rules | Enables type-safe URL state |
 | HIGH | Error Handling | 1 rule | Handles 404 and errors gracefully |
@@ -39,6 +40,10 @@ Comprehensive guidelines for implementing TanStack Router patterns in React appl
 - `ts-use-from-param` — Use `from` parameter for type narrowing
 - `ts-route-context-typing` — Type route context with createRootRouteWithContext
 - `ts-query-options-loader` — Use queryOptions in loaders for type inference
+
+### Router Config (Prefix: `router-`)
+
+- `router-default-options` — Configure router defaults (scrollRestoration, defaultErrorComponent, etc.)
 
 ### Route Organization (Prefix: `org-`)
 

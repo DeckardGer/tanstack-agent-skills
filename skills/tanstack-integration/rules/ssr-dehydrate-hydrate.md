@@ -1,204 +1,206 @@
-# ssr-dehydrate-hydrate: Configure Dehydration/Hydration
+# ssr-dehydrate-hydrate: Configure SSR Query Integration
 
-## Priority: LOW
+## Priority: CRITICAL
 
 ## Explanation
 
-For SSR with TanStack Start, configure the router to dehydrate Query's cache on the server and hydrate it on the client. This transfers prefetched data to the client, preventing duplicate requests.
+Use `@tanstack/react-router-ssr-query` to automatically handle SSR dehydration/hydration between TanStack Router and TanStack Query. This package automates cache transfer, streaming, and redirect handling.
 
 ## Bad Example
 
 ```tsx
-// No SSR configuration - data refetches on client
-const router = createRouter({
-  routeTree,
-  context: { queryClient },
-  // Missing dehydrate/hydrate configuration
-})
+// Manual dehydration - verbose and error-prone
+import { dehydrate, hydrate } from '@tanstack/react-query'
 
-// Server prefetches data
-export const Route = createFileRoute('/posts')({
-  loader: async ({ context: { queryClient } }) => {
-    await queryClient.ensureQueryData(postQueries.all())
-  },
-})
-
-// Client doesn't receive prefetched data
-// useSuspenseQuery refetches on mount
-```
-
-## Good Example: Full SSR Configuration
-
-```tsx
-// router.tsx
-import { createRouter } from '@tanstack/react-router'
-import {
-  QueryClient,
-  QueryClientProvider,
-  dehydrate,
-  hydrate,
-} from '@tanstack/react-query'
-
-export function createAppRouter() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 60 * 1000,
-        // Higher gcTime on server to survive serialization
-        gcTime: Infinity,
-      },
-    },
-  })
-
-  return createRouter({
-    routeTree,
-    context: { queryClient },
-
-    // Disable router caching - Query handles it
-    defaultPreloadStaleTime: 0,
-
-    // SSR: Serialize Query cache to send to client
-    dehydrate: () => ({
-      queryClientState: dehydrate(queryClient, {
-        shouldDehydrateQuery: (query) => {
-          // Only dehydrate successful queries
-          return query.state.status === 'success'
-        },
-      }),
-    }),
-
-    // SSR: Restore Query cache on client
-    hydrate: (dehydrated) => {
-      hydrate(queryClient, dehydrated.queryClientState)
-    },
-
-    Wrap: ({ children }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    ),
-  })
-}
-```
-
-## Good Example: TanStack Start Entry Files
-
-```tsx
-// app/ssr.tsx
-import { createRouter } from './router'
-import { getRouterManifest } from '@tanstack/react-start/router-manifest'
-import {
-  createStartHandler,
-  defaultStreamHandler,
-} from '@tanstack/react-start/server'
-
-export default createStartHandler({
-  createRouter,
-  getRouterManifest,
-})(defaultStreamHandler)
-
-// app/client.tsx
-import { createRouter } from './router'
-import { StartClient } from '@tanstack/react-start'
-import { hydrateRoot } from 'react-dom/client'
-
-const router = createRouter()
-
-hydrateRoot(
-  document,
-  <StartClient router={router} />
-)
-```
-
-## Good Example: Selective Dehydration
-
-```tsx
 const router = createRouter({
   routeTree,
   context: { queryClient },
 
+  // Manual approach - lots of boilerplate
   dehydrate: () => ({
-    queryClientState: dehydrate(queryClient, {
-      shouldDehydrateQuery: (query) => {
-        // Don't dehydrate failed queries
-        if (query.state.status !== 'success') return false
-
-        // Don't dehydrate user-specific data in shared cache
-        if (query.queryKey[0] === 'user-private') return false
-
-        // Don't dehydrate large payloads
-        if (query.state.dataUpdateCount > 0) {
-          const dataSize = JSON.stringify(query.state.data).length
-          if (dataSize > 100_000) return false  // Skip if > 100KB
-        }
-
-        return true
-      },
-    }),
+    queryClientState: dehydrate(queryClient),
   }),
 
   hydrate: (dehydrated) => {
     hydrate(queryClient, dehydrated.queryClientState)
   },
+
+  Wrap: ({ children }) => (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  ),
 })
 ```
 
-## Good Example: With React Query DevTools
+## Good Example: Modern SSR Integration
 
 ```tsx
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+// router.tsx
+import { QueryClient } from '@tanstack/react-query'
+import { createRouter } from '@tanstack/react-router'
+import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
+import { routeTree } from './routeTree.gen'
 
-export function createAppRouter() {
-  const queryClient = new QueryClient(/* ... */)
+export function getRouter() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        staleTime: 1000 * 60 * 2, // 2 minutes
+      },
+    },
+  })
 
-  return createRouter({
+  const router = createRouter({
     routeTree,
     context: { queryClient },
-
-    dehydrate: () => ({
-      queryClientState: dehydrate(queryClient),
-    }),
-
-    hydrate: (dehydrated) => {
-      hydrate(queryClient, dehydrated.queryClientState)
-    },
-
-    Wrap: ({ children }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-        {process.env.NODE_ENV === 'development' && (
-          <ReactQueryDevtools initialIsOpen={false} />
-        )}
-      </QueryClientProvider>
-    ),
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0, // Let Query manage cache freshness
+    scrollRestoration: true,
+    defaultStructuralSharing: true,
   })
+
+  // Automatic SSR dehydration/hydration
+  setupRouterSsrQueryIntegration({
+    router,
+    queryClient,
+    handleRedirects: true,  // Intercept redirects from queries/mutations
+    wrapQueryClient: true,  // Auto-wrap with QueryClientProvider
+  })
+
+  return router
 }
 ```
+
+## Good Example: With Error and NotFound Components
+
+```tsx
+import { DefaultCatchBoundary } from '@/components/DefaultCatchBoundary'
+import { DefaultNotFound } from '@/components/DefaultNotFound'
+
+export function getRouter() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        refetchOnWindowFocus: false,
+        staleTime: 1000 * 60 * 2,
+      },
+    },
+  })
+
+  const router = createRouter({
+    routeTree,
+    context: { queryClient, user: null },
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0,
+    defaultErrorComponent: DefaultCatchBoundary,
+    defaultNotFoundComponent: DefaultNotFound,
+    scrollRestoration: true,
+    defaultStructuralSharing: true,
+  })
+
+  setupRouterSsrQueryIntegration({
+    router,
+    queryClient,
+    handleRedirects: true,
+    wrapQueryClient: true,
+  })
+
+  return router
+}
+```
+
+## Good Example: Custom QueryClientProvider
+
+```tsx
+// If you need custom provider setup (e.g., for DevTools)
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+
+export function getRouter() {
+  const queryClient = new QueryClient()
+
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0,
+    scrollRestoration: true,
+  })
+
+  setupRouterSsrQueryIntegration({
+    router,
+    queryClient,
+    handleRedirects: true,
+    wrapQueryClient: false, // We'll provide our own
+  })
+
+  // Custom wrapper with DevTools
+  router.options.Wrap = ({ children }) => (
+    <QueryClientProvider client={queryClient}>
+      {children}
+      {process.env.NODE_ENV === 'development' && (
+        <ReactQueryDevtools initialIsOpen={false} />
+      )}
+    </QueryClientProvider>
+  )
+
+  return router
+}
+```
+
+## Good Example: Vite Configuration
+
+```ts
+// vite.config.ts
+import { tanstackStart } from "@tanstack/start/plugin/vite"
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+
+export default defineConfig({
+  plugins: [
+    tanstackStart(),  // Handles SSR entry points automatically
+    react(),
+  ],
+})
+```
+
+TanStack Start handles client hydration and SSR automatically via the Vite plugin. No separate `client.tsx` or `ssr.tsx` files are needed.
+
+## setupRouterSsrQueryIntegration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `router` | Router | Required | Your router instance |
+| `queryClient` | QueryClient | Required | Your QueryClient instance |
+| `handleRedirects` | boolean | `true` | Intercept and handle redirects from queries/mutations |
+| `wrapQueryClient` | boolean | `true` | Wrap router with QueryClientProvider automatically |
 
 ## SSR Data Flow
 
 ```
 Server:
   1. Request received
-  2. createRouter() creates fresh QueryClient
-  3. Router matches routes, runs loaders
-  4. Loaders call ensureQueryData → data cached in QueryClient
-  5. dehydrate() serializes QueryClient state
-  6. HTML + serialized state sent to client
+  2. getRouter() creates fresh QueryClient + Router
+  3. setupRouterSsrQueryIntegration connects them
+  4. Router matches routes, runs loaders
+  5. Loaders call ensureQueryData → data cached
+  6. Integration auto-dehydrates QueryClient state
+  7. HTML + serialized state streamed to client
 
 Client:
   1. HTML rendered (React hydrates)
-  2. createRouter() creates fresh QueryClient
-  3. hydrate() restores state from server
+  2. getRouter() creates fresh QueryClient + Router
+  3. Integration auto-hydrates state from server
   4. useSuspenseQuery finds data in cache - no refetch!
   5. App is interactive with data already loaded
 ```
 
 ## Context
 
-- `dehydrate()` extracts serializable state from QueryClient
-- `hydrate()` restores state into a QueryClient
-- Only successful queries are dehydrated by default
-- Set `staleTime > 0` to prevent immediate client refetch
-- Each SSR request needs its own QueryClient instance
-- DevTools only show in development builds
+- Install: `npm install @tanstack/react-router-ssr-query`
+- Creates fresh QueryClient per request (required for SSR)
+- Handles streaming of queries that resolve during render
+- Set `defaultPreloadStaleTime: 0` to let Query manage freshness
+- Each SSR request needs its own router instance via `getRouter()`
+- The integration handles all dehydration/hydration automatically

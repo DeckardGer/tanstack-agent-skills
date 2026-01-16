@@ -20,9 +20,10 @@ Guidelines for integrating TanStack Query, Router, and Start together effectivel
 | Priority | Category | Rules | Impact |
 |----------|----------|-------|--------|
 | CRITICAL | Setup | 3 rules | Foundational configuration |
+| CRITICAL | SSR Integration | 1 rule | Router + Query SSR setup |
 | HIGH | Data Flow | 4 rules | Correct data fetching patterns |
 | MEDIUM | Caching | 3 rules | Performance optimization |
-| LOW | SSR | 3 rules | Server rendering patterns |
+| MEDIUM | SSR | 2 rules | Additional SSR patterns |
 
 ## Quick Reference
 
@@ -45,9 +46,12 @@ Guidelines for integrating TanStack Query, Router, and Start together effectivel
 - `cache-preload-coordination` — Coordinate preloading between router and query
 - `cache-invalidation-patterns` — Unified invalidation patterns
 
-### SSR (Prefix: `ssr-`)
+### SSR Integration (Prefix: `ssr-`)
 
-- `ssr-dehydrate-hydrate` — Configure dehydration/hydration
+- `ssr-dehydrate-hydrate` — Use setupRouterSsrQueryIntegration for automatic SSR
+
+### Additional SSR (Prefix: `ssr-`)
+
 - `ssr-per-request-client` — Create QueryClient per request
 - `ssr-streaming-queries` — Handle streaming with queries
 

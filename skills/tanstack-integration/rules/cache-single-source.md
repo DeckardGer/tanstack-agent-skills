@@ -4,7 +4,7 @@
 
 ## Explanation
 
-When using TanStack Router with TanStack Query, let Query be the single source of truth for caching. Disable or minimize Router's built-in cache to avoid confusion about which cache is authoritative.
+When using TanStack Router with TanStack Query, let Query be the single source of truth for caching. Disable Router's built-in cache with `defaultPreloadStaleTime: 0` to avoid confusion about which cache is authoritative.
 
 ## Bad Example
 
@@ -41,21 +41,36 @@ function PostsPage() {
 
 ```tsx
 // router.tsx - Disable router cache when using Query
-const router = createRouter({
-  routeTree,
-  context: { queryClient },
+import { QueryClient } from '@tanstack/react-query'
+import { createRouter } from '@tanstack/react-router'
+import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
+import { routeTree } from './routeTree.gen'
 
-  // Let Query manage caching
-  defaultPreloadStaleTime: 0,  // Router doesn't cache
+export function getRouter() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 2, // 2 minutes
+        refetchOnWindowFocus: false,
+      },
+    },
+  })
 
-  // SSR integration
-  dehydrate: () => ({
-    queryClientState: dehydrate(queryClient),
-  }),
-  hydrate: (dehydrated) => {
-    hydrate(queryClient, dehydrated.queryClientState)
-  },
-})
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0, // Let Query manage caching
+    scrollRestoration: true,
+  })
+
+  setupRouterSsrQueryIntegration({
+    router,
+    queryClient,
+  })
+
+  return router
+}
 
 // routes/posts.tsx
 export const Route = createFileRoute('/posts')({
@@ -84,14 +99,14 @@ function PostsPage() {
 | Optimistic updates | No | Yes |
 | Mutations | No built-in | Full support |
 | DevTools | Limited | Rich debugging |
-| Cross-route sharing | Limited | Full |
+| Cross-route sharing | Full | Full |
 
 ## Good Example: Coordinated Caching Config
 
 ```tsx
-// lib/query-client.ts
-export function createQueryClient() {
-  return new QueryClient({
+// router.tsx
+export function getRouter() {
+  const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 60 * 1000,       // Fresh for 1 minute
@@ -101,25 +116,22 @@ export function createQueryClient() {
       },
     },
   })
-}
 
-// router.tsx
-export function createAppRouter() {
-  const queryClient = createQueryClient()
-
-  return createRouter({
+  const router = createRouter({
     routeTree,
     context: { queryClient },
-
-    // Router defers to Query for all caching decisions
-    defaultPreloadStaleTime: 0,
-
-    Wrap: ({ children }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    ),
+    defaultPreload: 'intent',
+    defaultPreloadStaleTime: 0, // Router defers to Query
+    scrollRestoration: true,
+    defaultStructuralSharing: true,
   })
+
+  setupRouterSsrQueryIntegration({
+    router,
+    queryClient,
+  })
+
+  return router
 }
 ```
 
@@ -127,12 +139,20 @@ export function createAppRouter() {
 
 ```tsx
 // Preloading still works - it just uses Query's cache
-const router = createRouter({
-  routeTree,
-  context: { queryClient },
-  defaultPreload: 'intent',       // Preload on hover
-  defaultPreloadStaleTime: 0,     // Query decides if data is stale
-})
+export function getRouter() {
+  const queryClient = new QueryClient()
+
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    defaultPreload: 'intent',     // Preload on hover
+    defaultPreloadStaleTime: 0,   // Query decides if data is stale
+  })
+
+  setupRouterSsrQueryIntegration({ router, queryClient })
+
+  return router
+}
 
 // When user hovers a Link:
 // 1. Router triggers preload
@@ -164,4 +184,4 @@ const createPost = useMutation({
 - Preloading still works - just uses Query's cache
 - Mutations, optimistic updates, invalidation all work normally
 - DevTools show the single authoritative cache state
-- SSR hydration uses Query's dehydrate/hydrate
+- Use `setupRouterSsrQueryIntegration` for SSR hydration
