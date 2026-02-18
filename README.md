@@ -59,7 +59,7 @@ Best practices for integrating TanStack Query with TanStack Router and TanStack 
 ## Installation
 
 ```bash
-npx add-skill tanstack-agent-skills
+npx skills add DeckardGer/tanstack-agent-skills
 ```
 
 Or manually add to your project's `.cursor/` or Claude Code configuration.
