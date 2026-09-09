@@ -94,7 +94,7 @@ export const getPosts = createServerFn()  // GET is default
   })
 
 export const getPost = createServerFn()
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const post = await db.posts.findUnique({
       where: { id: data.id },

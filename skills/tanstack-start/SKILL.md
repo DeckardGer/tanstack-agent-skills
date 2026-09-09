@@ -26,7 +26,7 @@ Comprehensive guidelines for implementing TanStack Start patterns in full-stack 
 | HIGH | Middleware | 4 rules | Request/response handling |
 | HIGH | Authentication | 4 rules | Secure user sessions |
 | MEDIUM | API Routes | 1 rule | External endpoint patterns |
-| MEDIUM | SSR | 6 rules | Server rendering patterns |
+| MEDIUM | SSR | 5 rules | Server rendering patterns |
 | MEDIUM | Error Handling | 3 rules | Graceful failure handling |
 | MEDIUM | Environment | 1 rule | Configuration management |
 | LOW | File Organization | 3 rules | Maintainable code structure |

@@ -11,7 +11,7 @@ Server function errors cross the network boundary. Handle them gracefully with a
 ```tsx
 // Throwing raw errors - exposes internals
 export const createUser = createServerFn({ method: 'POST' })
-  .validator(createUserSchema)
+  .inputValidator(createUserSchema)
   .handler(async ({ data }) => {
     const user = await db.users.create({ data })  // May throw DB error
     return user
@@ -70,7 +70,7 @@ import { createServerFn, notFound } from '@tanstack/react-start'
 import { setResponseStatus } from '@tanstack/react-start/server'
 
 export const getPost = createServerFn()
-  .validator(z.object({ id: z.string() }))
+  .inputValidator(z.object({ id: z.string() }))
   .handler(async ({ data }) => {
     const post = await db.posts.findUnique({
       where: { id: data.id },
@@ -85,7 +85,7 @@ export const getPost = createServerFn()
   })
 
 export const createPost = createServerFn({ method: 'POST' })
-  .validator(createPostSchema)
+  .inputValidator(createPostSchema)
   .handler(async ({ data }) => {
     try {
       const post = await db.posts.create({ data })
@@ -147,7 +147,7 @@ function CreatePostForm() {
 
 ```tsx
 export const updateProfile = createServerFn({ method: 'POST' })
-  .validator(updateProfileSchema)
+  .inputValidator(updateProfileSchema)
   .handler(async ({ data }) => {
     const session = await getSessionData()
 
@@ -184,4 +184,4 @@ export const updateProfile = createServerFn({ method: 'POST' })
 - Set status codes with `setResponseStatus()`
 - Log full errors server-side, sanitize for client
 - Create custom error classes for consistent handling
-- Validation errors from `.validator()` are automatic
+- Validation errors from `.inputValidator()` are automatic

@@ -96,18 +96,18 @@ export const loggingMiddleware = createMiddleware()
 ## Good Example: Global Middleware Configuration
 
 ```tsx
-// app/start.ts
-import { createStart } from '@tanstack/react-start/server'
+// src/start.ts
+import { createStart } from '@tanstack/react-start'
 import { loggingMiddleware } from './middleware/logging'
 import { authMiddleware } from './middleware/auth'
 
-export default createStart({
+export const startInstance = createStart(() => ({
   // Request middleware runs for all requests
   requestMiddleware: [
     loggingMiddleware,
     authMiddleware,
   ],
-})
+}))
 ```
 
 ## Good Example: Rate Limiting Middleware
@@ -161,6 +161,6 @@ loggingMiddleware.server(async ({ next }) => {
 - Request middleware applies to all server requests
 - Middleware can add to context using `next({ context: {...} })`
 - Order matters - first middleware wraps the entire chain
-- Global middleware defined in `app/start.ts`
+- Global middleware defined in `src/start.ts`
 - Route-specific middleware uses `beforeLoad`
 - Server function middleware uses separate pattern (see `mw-function-middleware`)

@@ -30,26 +30,29 @@ export const Route = createFileRoute('/blog/$slug')({
 
 ## Good Example: Static Prerendering
 
-```tsx
-// app.config.ts
-import { defineConfig } from '@tanstack/react-start/config'
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import viteReact from '@vitejs/plugin-react'
 
 export default defineConfig({
-  server: {
-    prerender: {
-      // Routes to prerender at build time
-      routes: [
-        '/',
-        '/about',
-        '/contact',
-        '/pricing',
-      ],
-      // Or crawl from root
-      crawlLinks: true,
-    },
-  },
+  plugins: [
+    tanstackStart({
+      prerender: {
+        enabled: true,
+        crawlLinks: true,
+        autoStaticPathsDiscovery: true,
+        concurrency: 14,
+        filter: ({ path }) => !path.startsWith('/app'),
+      },
+    }),
+    viteReact(),
+  ],
 })
+```
 
+```tsx
 // routes/about.tsx - Will be prerendered
 export const Route = createFileRoute('/about')({
   loader: async () => {
@@ -61,56 +64,45 @@ export const Route = createFileRoute('/about')({
 })
 ```
 
-## Good Example: Dynamic Prerendering
+## Good Example: Per-Page Prerender Config
 
-```tsx
-// app.config.ts
-export default defineConfig({
-  server: {
-    prerender: {
-      // Generate routes dynamically
-      routes: async () => {
-        const posts = await db.posts.findMany({
-          where: { published: true },
-          select: { slug: true },
-        })
-
-        return [
-          '/',
-          '/blog',
-          ...posts.map(p => `/blog/${p.slug}`),
-        ]
-      },
-    },
+```ts
+// vite.config.ts
+tanstackStart({
+  prerender: {
+    enabled: true,
+    crawlLinks: true,
   },
+  pages: [
+    {
+      path: '/landing',
+      prerender: { enabled: true, outputPath: '/landing/index.html' },
+    },
+  ],
 })
 ```
 
-## Good Example: ISR with Revalidation
+## Good Example: ISR with Cache Headers
 
 ```tsx
 // routes/blog/$slug.tsx
 import { createFileRoute } from '@tanstack/react-router'
-import { setHeaders } from '@tanstack/react-start/server'
 
 export const Route = createFileRoute('/blog/$slug')({
-  loader: async ({ params }) => {
-    const post = await fetchPost(params.slug)
-
-    // ISR: Cache for 60 seconds, then revalidate
-    setHeaders({
-      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
-    })
-
-    return { post }
-  },
+  loader: async ({ params }) => fetchPost(params.slug),
+  // ISR via standard HTTP cache headers
+  headers: () => ({
+    'Cache-Control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
+  }),
+  staleTime: 60_000,      // Client-side stale time (1 minute)
+  gcTime: 5 * 60_000,     // Client-side GC time (5 minutes)
   component: BlogPost,
 })
 
-// First request: SSR and cache
-// Next 60 seconds: Serve cached version
-// After 60 seconds: Serve stale, revalidate in background
-// After 300 seconds: Full SSR again
+// First request: SSR and cache at CDN
+// Next 3600 seconds: Serve cached version
+// After 3600 seconds: Serve stale, revalidate in background
+// After 86400 seconds: Full SSR again
 ```
 
 ## Good Example: Hybrid Static/Dynamic
@@ -129,50 +121,48 @@ export const Route = createFileRoute('/products')({
 export const Route = createFileRoute('/products/$productId')({
   loader: async ({ params }) => {
     const product = await fetchProduct(params.productId)
-
     if (!product) throw notFound()
-
-    // Cache product pages for 5 minutes
-    setHeaders({
-      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-    })
-
     return { product }
   },
+  // Cache product pages for 5 minutes
+  headers: () => ({
+    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+  }),
 })
 
 // routes/cart.tsx - Always SSR (user-specific)
 export const Route = createFileRoute('/cart')({
   loader: async ({ context }) => {
-    // No caching - user-specific data
-    setHeaders({
-      'Cache-Control': 'private, no-store',
-    })
-
     const cart = await fetchUserCart(context.user.id)
     return { cart }
   },
+  headers: () => ({
+    'Cache-Control': 'private, no-store',
+  }),
 })
 ```
 
-## Good Example: On-Demand Revalidation
+## Good Example: On-Demand Revalidation via Server Route
 
 ```tsx
-// API route to trigger revalidation
-// app/routes/api/revalidate.ts
-export const APIRoute = createAPIFileRoute('/api/revalidate')({
-  POST: async ({ request }) => {
-    const { secret, path } = await request.json()
+// routes/api/revalidate.ts
+import { createFileRoute } from '@tanstack/react-router'
 
-    // Verify secret
-    if (secret !== process.env.REVALIDATE_SECRET) {
-      return json({ error: 'Invalid secret' }, { status: 401 })
-    }
+export const Route = createFileRoute('/api/revalidate')({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        const { secret, path } = await request.json()
 
-    // Trigger revalidation (implementation depends on hosting)
-    await revalidatePath(path)
+        if (secret !== process.env.REVALIDATE_SECRET) {
+          return Response.json({ error: 'Invalid secret' }, { status: 401 })
+        }
 
-    return json({ revalidated: true, path })
+        // Trigger revalidation (implementation depends on hosting)
+        await revalidatePath(path)
+        return Response.json({ revalidated: true, path })
+      },
+    },
   },
 })
 

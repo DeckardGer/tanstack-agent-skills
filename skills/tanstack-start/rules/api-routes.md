@@ -30,7 +30,6 @@ export const getUsers = createServerFn()
 ```tsx
 // routes/api/users.ts
 import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
 
 export const Route = createFileRoute('/api/users')({
   server: {
@@ -40,7 +39,7 @@ export const Route = createFileRoute('/api/users')({
           select: { id: true, name: true, email: true },
         })
 
-        return json(users, {
+        return Response.json(users, {
           headers: {
             'Cache-Control': 'public, max-age=60',
           },
@@ -53,11 +52,11 @@ export const Route = createFileRoute('/api/users')({
         // Validate input
         const parsed = createUserSchema.safeParse(body)
         if (!parsed.success) {
-          return json({ error: parsed.error.flatten() }, { status: 400 })
+          return Response.json({ error: parsed.error.flatten() }, { status: 400 })
         }
 
         const user = await db.users.create({ data: parsed.data })
-        return json(user, { status: 201 })
+        return Response.json(user, { status: 201 })
       },
     },
   },
@@ -121,7 +120,6 @@ export const Route = createFileRoute('/api/webhooks/stripe')({
 ```tsx
 // routes/api/posts/$postId.ts
 import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
 
 export const Route = createFileRoute('/api/posts/$postId')({
   server: {
@@ -132,10 +130,10 @@ export const Route = createFileRoute('/api/posts/$postId')({
         })
 
         if (!post) {
-          return json({ error: 'Post not found' }, { status: 404 })
+          return Response.json({ error: 'Post not found' }, { status: 404 })
         }
 
-        return json(post)
+        return Response.json(post)
       },
 
       PUT: async ({ request, params }) => {
@@ -143,7 +141,7 @@ export const Route = createFileRoute('/api/posts/$postId')({
         const parsed = updatePostSchema.safeParse(body)
 
         if (!parsed.success) {
-          return json({ error: parsed.error.flatten() }, { status: 400 })
+          return Response.json({ error: parsed.error.flatten() }, { status: 400 })
         }
 
         const post = await db.posts.update({
@@ -151,7 +149,7 @@ export const Route = createFileRoute('/api/posts/$postId')({
           data: parsed.data,
         })
 
-        return json(post)
+        return Response.json(post)
       },
 
       DELETE: async ({ params }) => {
@@ -168,7 +166,6 @@ export const Route = createFileRoute('/api/posts/$postId')({
 ```tsx
 // routes/api/protected/data.ts
 import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
 import { apiKeyMiddleware } from '@/lib/middleware'
 
 export const Route = createFileRoute('/api/protected/data')({
@@ -179,7 +176,7 @@ export const Route = createFileRoute('/api/protected/data')({
       GET: async ({ request, context }) => {
         // context.client available from middleware
         const data = await fetchDataForClient(context.client.id)
-        return json(data)
+        return Response.json(data)
       },
     },
   },
@@ -191,27 +188,27 @@ export const Route = createFileRoute('/api/protected/data')({
 ```tsx
 // routes/api/admin/users.ts
 import { createFileRoute } from '@tanstack/react-router'
-import { json } from '@tanstack/react-start'
 
 export const Route = createFileRoute('/api/admin/users')({
   server: {
     middleware: [authMiddleware],  // All handlers require auth
-    handlers: (createHandlers) => ({
-      GET: createHandlers.GET(async ({ context }) => {
-        const users = await db.users.findMany()
-        return json(users)
-      }),
+    handlers: ({ createHandlers }) =>
+      createHandlers({
+        GET: async ({ context }) => {
+          const users = await db.users.findMany()
+          return Response.json(users)
+        },
 
-      // DELETE requires additional admin middleware
-      DELETE: createHandlers.DELETE({
-        middleware: [adminOnlyMiddleware],
-        handler: async ({ request, context }) => {
-          const { userId } = await request.json()
-          await db.users.delete({ where: { id: userId } })
-          return json({ deleted: true })
+        // DELETE requires additional admin middleware
+        DELETE: {
+          middleware: [adminOnlyMiddleware],
+          handler: async ({ request, context }) => {
+            const { userId } = await request.json()
+            await db.users.delete({ where: { id: userId } })
+            return Response.json({ deleted: true })
+          },
         },
       }),
-    }),
   },
 })
 ```
@@ -231,8 +228,8 @@ export const Route = createFileRoute('/api/admin/users')({
 
 - Server routes use `createFileRoute` with a `server.handlers` property
 - Support all HTTP methods: GET, POST, PUT, PATCH, DELETE, etc.
-- Use `json()` helper for JSON responses
+- Use `Response.json()` for JSON responses
 - Return `Response` objects for custom formats
-- Handler receives `{ request, params }` object
+- Handler receives `{ request, params, context }` object
 - Ideal for: webhooks, public APIs, file downloads, third-party integrations
 - Consider versioning: `/api/v1/users` for public APIs

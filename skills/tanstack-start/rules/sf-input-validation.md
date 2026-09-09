@@ -46,7 +46,7 @@ const updateUserSchema = z.object({
 })
 
 export const updateUser = createServerFn({ method: 'POST' })
-  .validator(updateUserSchema)
+  .inputValidator(updateUserSchema)
   .handler(async ({ data }) => {
     // data is fully typed: { id: string; name: string; email: string }
     const user = await db.users.update({
@@ -81,7 +81,7 @@ const createOrderSchema = z.object({
 })
 
 export const createOrder = createServerFn({ method: 'POST' })
-  .validator(createOrderSchema)
+  .inputValidator(createOrderSchema)
   .handler(async ({ data }) => {
     // All data is validated and typed
     // Process order safely
@@ -104,7 +104,7 @@ const registrationSchema = z.object({
 )
 
 export const register = createServerFn({ method: 'POST' })
-  .validator(registrationSchema)
+  .inputValidator(registrationSchema)
   .handler(async ({ data }) => {
     // Passwords match, email is lowercase
     // Only password needed (confirmPassword was for validation)
@@ -134,7 +134,7 @@ export type CreatePostInput = z.infer<typeof createPostSchema>
 import { createPostSchema } from './schemas/post'
 
 export const createPost = createServerFn({ method: 'POST' })
-  .validator(createPostSchema)
+  .inputValidator(createPostSchema)
   .handler(async ({ data }) => { /* ... */ })
 
 // components/CreatePostForm.tsx - Client form validation
@@ -151,7 +151,7 @@ function CreatePostForm() {
 ## Context
 
 - Network boundary = trust boundary - always validate
-- Use `.validator()` before `.handler()` in the chain
+- Use `.inputValidator()` before `.handler()` in the chain
 - Validation errors return proper HTTP status codes
 - Share schemas between client forms and server functions
 - Strip or ignore fields clients shouldn't control (like `role`, `isAdmin`)

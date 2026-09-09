@@ -34,15 +34,17 @@ Best practices for type-safe routing, data loading, search params, and navigatio
 - Working with search params, loaders, or code splitting
 - Configuring type-safe navigation
 
-**30+ rules across 8 categories:**
-- Type Safety (CRITICAL) — Router registration, type narrowing
-- Route Organization (CRITICAL) — File-based routing, route trees
-- Data Loading (HIGH) — Loaders, Query integration
-- Search Params (HIGH) — Validation, type inheritance
-- Navigation (MEDIUM) — Link component, active states
-- Code Splitting (MEDIUM) — Lazy routes, critical path
-- Preloading (MEDIUM) — Intent-based preloading
-- Route Context (LOW) — Dependency injection
+**36 rules across 10 categories:**
+- Type Safety (CRITICAL) — Router registration, type narrowing, context typing
+- Route Organization (CRITICAL) — File-based routing, route trees, pathless layouts
+- Router Config (HIGH) — Global router defaults
+- Data Loading (HIGH) — Loaders, Query integration, deferred data
+- Search Params (HIGH) — Validation, type inheritance, middleware, defaults
+- Error Handling (HIGH) — Not-found routes, error boundaries
+- Navigation (MEDIUM) — Link component, active states, programmatic navigation
+- Code Splitting (MEDIUM) — Lazy routes, auto splitting, critical path
+- Preloading (MEDIUM) — Intent-based, stale time, manual preloading
+- Route Context (LOW) — Dependency injection, beforeLoad
 
 ### [tanstack-start](./skills/tanstack-start/)
 
@@ -53,13 +55,15 @@ Best practices for full-stack React applications with TanStack Start, including 
 - Implementing authentication or middleware
 - Configuring SSR, streaming, or deployment
 
-**29+ rules across 8 categories:**
+**32 rules across 10 categories:**
 - Server Functions (CRITICAL) — createServerFn patterns
 - Security (CRITICAL) — Input validation, CSRF protection
 - Middleware (HIGH) — Request/function middleware
 - Authentication (HIGH) — Sessions, route protection
-- SSR (MEDIUM) — Hydration safety, streaming
-- Error Handling (MEDIUM) — Server errors, redirects
+- API Routes (MEDIUM) — External endpoint patterns
+- SSR (MEDIUM) — Hydration safety, streaming, selective SSR
+- Error Handling (MEDIUM) — Server errors, redirects, not-found
+- Environment (MEDIUM) — Configuration management
 - File Organization (LOW) — Code separation patterns
 - Deployment (LOW) — Environment config
 

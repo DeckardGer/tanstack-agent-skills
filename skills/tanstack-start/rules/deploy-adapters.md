@@ -4,107 +4,105 @@
 
 ## Explanation
 
-TanStack Start uses deployment adapters to target different hosting platforms. Each adapter optimizes the build output for its platform's runtime, edge functions, and static hosting capabilities.
+TanStack Start is built on Vite and supports deployment to any hosting provider via platform-specific Vite plugins. Each adapter optimizes the build output for its platform's runtime. Configuration is done in `vite.config.ts` using `tanstackStart()` from `@tanstack/react-start/plugin/vite`.
 
 ## Bad Example
 
 ```tsx
-// Not configuring adapter - using defaults may not match your host
-// app.config.ts
-export default defineConfig({
-  // No adapter specified
-  // May not work correctly on your deployment platform
-})
-
-// Or using wrong adapter for platform
-export default defineConfig({
-  server: {
-    preset: 'node-server',  // But deploying to Vercel Edge
-  },
-})
-```
-
-## Good Example: Vercel Deployment
-
-```tsx
+// Using the old app.config.ts pattern - no longer valid
 // app.config.ts
 import { defineConfig } from '@tanstack/react-start/config'
 
 export default defineConfig({
   server: {
-    preset: 'vercel',
-    // Vercel-specific options
+    preset: 'vercel',  // Old preset-based config
   },
 })
+```
 
-// vercel.json (optional, for customization)
+## Good Example: Cloudflare Workers
+
+```bash
+pnpm add -D @cloudflare/vite-plugin wrangler
+```
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import { cloudflare } from '@cloudflare/vite-plugin'
+import viteReact from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [
+    cloudflare({ viteEnvironment: { name: 'ssr' } }),
+    tanstackStart(),
+    viteReact(),
+  ],
+})
+```
+
+```jsonc
+// wrangler.jsonc
 {
-  "framework": null,
-  "buildCommand": "npm run build",
-  "outputDirectory": ".output"
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tanstack-start-app",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry"
 }
-```
-
-## Good Example: Cloudflare Pages
-
-```tsx
-// app.config.ts
-import { defineConfig } from '@tanstack/react-start/config'
-
-export default defineConfig({
-  server: {
-    preset: 'cloudflare-pages',
-  },
-})
-
-// wrangler.toml
-name = "my-tanstack-app"
-compatibility_date = "2024-01-01"
-pages_build_output_dir = ".output/public"
-
-// For Cloudflare Workers (full control)
-export default defineConfig({
-  server: {
-    preset: 'cloudflare',
-  },
-})
 ```
 
 ## Good Example: Netlify
 
-```tsx
-// app.config.ts
-import { defineConfig } from '@tanstack/react-start/config'
-
-export default defineConfig({
-  server: {
-    preset: 'netlify',
-  },
-})
-
-// netlify.toml
-[build]
-  command = "npm run build"
-  publish = ".output/public"
-
-[functions]
-  directory = ".output/server"
+```bash
+npm install -D @netlify/vite-plugin-tanstack-start
 ```
 
-## Good Example: Node.js Server
-
-```tsx
-// app.config.ts
-import { defineConfig } from '@tanstack/react-start/config'
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import netlify from '@netlify/vite-plugin-tanstack-start'
+import viteReact from '@vitejs/plugin-react'
 
 export default defineConfig({
-  server: {
-    preset: 'node-server',
-    // Optional: customize port
-  },
+  plugins: [
+    tanstackStart(),
+    netlify(),
+    viteReact(),
+  ],
 })
+```
 
-// Dockerfile
+## Good Example: Nitro (Vercel, Node.js, Docker)
+
+```json
+{
+  "dependencies": {
+    "nitro": "npm:nitro-nightly@latest"
+  }
+}
+```
+
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import { nitro } from 'nitro/vite'
+import viteReact from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [
+    tanstackStart(),
+    nitro(),
+    viteReact(),
+  ],
+})
+```
+
+```dockerfile
+# Dockerfile for Node.js deployment
 FROM node:20-alpine
 WORKDIR /app
 COPY package*.json ./
@@ -112,90 +110,44 @@ RUN npm ci --only=production
 COPY .output .output
 EXPOSE 3000
 CMD ["node", ".output/server/index.mjs"]
-
-// Or run directly
-// node .output/server/index.mjs
 ```
 
-## Good Example: Static Export (SPA)
+## Good Example: Bun
 
-```tsx
-// app.config.ts
-import { defineConfig } from '@tanstack/react-start/config'
-
-export default defineConfig({
-  server: {
-    preset: 'static',
-    prerender: {
-      routes: ['/'],
-      crawlLinks: true,
-    },
-  },
-})
-
-// Output: .output/public (static files only)
-// Host anywhere: GitHub Pages, S3, any static host
-```
-
-## Good Example: AWS Lambda
-
-```tsx
-// app.config.ts
-import { defineConfig } from '@tanstack/react-start/config'
+```ts
+// vite.config.ts
+import { defineConfig } from 'vite'
+import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import { nitro } from 'nitro/vite'
+import viteReact from '@vitejs/plugin-react'
 
 export default defineConfig({
-  server: {
-    preset: 'aws-lambda',
-  },
+  plugins: [
+    tanstackStart(),
+    nitro({ preset: 'bun' }),
+    viteReact(),
+  ],
 })
-
-// Deploy with SST, Serverless Framework, or AWS CDK
-// serverless.yml example:
-service: my-tanstack-app
-provider:
-  name: aws
-  runtime: nodejs20.x
-functions:
-  app:
-    handler: .output/server/index.handler
-    events:
-      - http: ANY /
-      - http: ANY /{proxy+}
-```
-
-## Good Example: Bun Runtime
-
-```tsx
-// app.config.ts
-import { defineConfig } from '@tanstack/react-start/config'
-
-export default defineConfig({
-  server: {
-    preset: 'bun',
-  },
-})
-
-// Run with: bun .output/server/index.mjs
 ```
 
 ## Adapter Comparison
 
-| Adapter | Runtime | Edge | Static | Best For |
-|---------|---------|------|--------|----------|
-| `vercel` | Node/Edge | Yes | Yes | Vercel hosting |
-| `cloudflare-pages` | Workers | Yes | Yes | Cloudflare Pages |
-| `cloudflare` | Workers | Yes | No | Cloudflare Workers |
-| `netlify` | Node | Yes | Yes | Netlify hosting |
-| `node-server` | Node | No | No | Docker, VPS, self-host |
-| `static` | None | No | Yes | Any static host |
-| `aws-lambda` | Node | No | No | AWS serverless |
-| `bun` | Bun | No | No | Bun runtime |
+| Platform | Plugin | Notes |
+|----------|--------|-------|
+| Cloudflare Workers | `@cloudflare/vite-plugin` | Official partner, edge runtime |
+| Netlify | `@netlify/vite-plugin-tanstack-start` | Official partner |
+| Railway | Nitro adapter | Auto-detects, push to deploy |
+| Vercel | Nitro adapter | Via `nitro/vite` |
+| Node.js / Docker | Nitro adapter | `node .output/server/index.mjs` |
+| Bun | Nitro with `preset: 'bun'` | Requires React 19 |
+| Appwrite Sites | Standard build | Configure output dir in dashboard |
 
 ## Context
 
-- Adapters transform output for target platform
-- Edge adapters have API limitations (no file system, etc.)
-- Static preset requires all routes to be prerenderable
-- Test locally with `npm run build && npm run preview`
-- Check platform docs for runtime-specific constraints
-- Some platforms auto-detect TanStack Start (no adapter needed)
+- All deployment config is in `vite.config.ts` — there is no `app.config.ts`
+- `tanstackStart()` must come BEFORE `viteReact()` in the plugins array
+- Cloudflare and Netlify have dedicated first-party plugins
+- All other platforms use the generic Nitro adapter (`nitro/vite`)
+- Edge runtimes have API limitations (no file system, limited Node.js APIs)
+- Test locally with `vite build && vite preview`
+- ISR uses standard HTTP `Cache-Control` headers, not a framework-specific API

@@ -44,7 +44,7 @@ export function getSession() {
 
 // Usage in server function
 export const login = createServerFn({ method: 'POST' })
-  .validator(loginSchema)
+  .inputValidator(loginSchema)
   .handler(async ({ data }) => {
     const session = await getSession()
 
@@ -76,7 +76,7 @@ import { hashPassword, verifyPassword } from './password.server'
 
 // Login
 export const login = createServerFn({ method: 'POST' })
-  .validator(z.object({
+  .inputValidator(z.object({
     email: z.string().email(),
     password: z.string().min(1),
   }))
