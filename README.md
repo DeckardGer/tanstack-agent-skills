@@ -145,4 +145,4 @@ Works with any AI coding agent that supports `AGENTS.md`, including Claude Code,
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE) for details.
